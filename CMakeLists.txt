@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.16)
 
 project(qjsxx VERSION 1.0 LANGUAGES CXX)
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 include(CheckCXXSourceCompiles)
 
 # =====================================================================
@@ -38,12 +41,16 @@ endfunction()
 check_standard("23" CPP_23_SUPPORTED)
 check_exp(EXP_SUPPORTED)
 
-if (${CPP_23_SUPPORTED})
-    set(CMAKE_CXX_STANDARD 23)
-else()
-    set(CMAKE_CXX_STANDARD 20)
+option(QJS_USE_STACKTRACE "Use stacktrace if available" OFF)
+if (NOT QJS_USE_STACKTRACE)
+    set(CPP_23_SUPPORTED OFF)
 endif()
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if (${CPP_23_SUPPORTED})
+    set(CXX_STANDARD 23)
+else()
+    set(CXX_STANDARD 20)
+endif()
 
 file(GLOB  QUICKJS_SOURCES  CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/quickjs_*.cpp"
@@ -66,17 +73,16 @@ add_library(qjsxx SHARED
     ${QUICKJS_SOURCES}
 )
 
-message(STATUS "Using -std=c++${CMAKE_CXX_STANDARD}")
+message(STATUS "Using -std=c++${CXX_STANDARD}")
 
 foreach(target qjsxx qjsxx_static)
     target_link_libraries(${target} PRIVATE qjs)
-    if (${EXP_SUPPORTED})
-        target_link_libraries(${target} PRIVATE stdc++exp)
-    endif() 
-    target_compile_features(${target} PUBLIC cxx_std_${CMAKE_CXX_STANDARD})
-
+    target_compile_features(${target} PUBLIC cxx_std_${CXX_STANDARD})
     if (${CPP_23_SUPPORTED})
         target_compile_definitions(${target} PUBLIC QJS_USE_STACKTRACE)
+        if (${EXP_SUPPORTED})
+            target_link_libraries(${target} PRIVATE stdc++exp)
+        endif() 
     endif()
     set_target_properties(${target} PROPERTIES
         OUTPUT_NAME qjsxx
@@ -85,24 +91,22 @@ foreach(target qjsxx qjsxx_static)
     )
 endforeach()
 
+add_executable(qjsxx_test test_library.cpp)
+
+message(STATUS "Compiling tests")
+target_link_libraries(qjsxx_test PRIVATE qjsxx)
+set_target_properties(qjsxx_test PROPERTIES
+    CXX_STANDARD ${CXX_STANDARD}
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
+)
+add_custom_command(TARGET qjsxx_test POST_BUILD
+    COMMAND $<TARGET_FILE:qjsxx_test>
+)
 
 if (${CPP_23_SUPPORTED})
-    add_executable(qjsxx_test test_library.cpp)
-
-    message(STATUS "Compiling tests")
-    target_link_libraries(qjsxx_test PRIVATE qjsxx)
-    set_target_properties(qjsxx_test PROPERTIES
-        CXX_STANDARD ${CMAKE_CXX_STANDARD}
-        CXX_STANDARD_REQUIRED ON
-        CXX_EXTENSIONS OFF
-    )
-    add_custom_command(TARGET qjsxx_test POST_BUILD
-        COMMAND $<TARGET_FILE:qjsxx_test>
-    )
-
+    target_compile_definitions(qjsxx_test PUBLIC QJS_USE_STACKTRACE)
     if (${EXP_SUPPORTED})
         target_link_libraries(qjsxx_test PRIVATE stdc++exp)
     endif() 
-else()
-  message(STATUS "Skip tests")
 endif()

@@ -5,26 +5,33 @@ using namespace qjs;
 using namespace std;
 
 #include <exception>
-#include <stacktrace>
 #include <string>
 #include <utility>
 #include <sstream>
 #include <iostream>
 
+#ifdef QJS_USE_STACKTRACE
+#include <stacktrace>
+#endif
+
 class TracedException : public std::exception {
 public:
     explicit TracedException(std::string message) 
-        : message_(std::move(message)),
-          // Capture stack right here, skipping this constructor frame
-          trace_(std::stacktrace::current(1)) {}
-
+        : message_(std::move(message))
+#ifdef QJS_USE_STACKTRACE
+        , trace_(std::stacktrace::current(1)) 
+#endif
+          {}
+#ifdef QJS_USE_STACKTRACE
     // Expose the raw trace container if caller needs to iterate entries
     [[nodiscard]] const std::stacktrace& trace() const noexcept { 
         return trace_; 
     }
+#endif
 
     // Override what() to combine the error string and formatted stacktrace
     [[nodiscard]] const char* what() const noexcept override {
+#ifdef QJS_USE_STACKTRACE
         if (lazy_formatted_what_.empty()) {
             try {
                 std::stringstream ss;
@@ -32,16 +39,21 @@ public:
                 lazy_formatted_what_ = ss.str();
             } catch (...) {
                 // Return fallback string if memory allocation fails inside catch
+#endif
                 return message_.c_str(); 
+#ifdef QJS_USE_STACKTRACE
             }
         }
         return lazy_formatted_what_.c_str();
+#endif
     }
 
 private:
     std::string message_;
+#ifdef QJS_USE_STACKTRACE
     std::stacktrace trace_;
     mutable std::string lazy_formatted_what_; // Cached allocation block
+#endif
 };
 
 void assert(bool assertFlag){

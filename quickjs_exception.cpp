@@ -36,8 +36,8 @@ struct ExceptionPointer {
     } catch (...) {
     }
 #else
-    point->lazy_formatted_what_ =
-        cast_exception_message(cast_exception_message);
+    this->lazy_formatted_what_ =
+        cast_exception_message(message_);
 #endif
     goto return_lazy_formatted_what;
   }

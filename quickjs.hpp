@@ -128,19 +128,19 @@ public:
 
   template <NotNumber T> Value newValue(const T &value);
 
-  template <> Value newValue<long double>(const long double &);
-
-  template <>
-  Value newValue<std::basic_string<char>>(const std::basic_string<char> &);
-
-  template <> Value newValue<bool>(const bool &);
-
   template <Number T> inline Value newValue(const T &value);
 
 private:
   Context(std::shared_ptr<qjs_private::ContextHolder>);
   std::shared_ptr<qjs_private::ContextHolder> context_ptr;
 };
+
+  template <> Value Context::newValue<long double>(const long double &);
+
+  template <>
+  Value Context::newValue<std::basic_string<char>>(const std::basic_string<char> &);
+
+  template <> Value Context::newValue<bool>(const bool &);
 
 class Value {
   friend class Runtime;
@@ -160,26 +160,6 @@ public:
 
   template <NotNumber T> bool is();
 
-  template <> long double as<long double>(bool safe);
-
-  template <> std::basic_string<char> as<std::basic_string<char>>(bool safe);
-
-  template <> bool as<bool>(bool safe);
-
-  template <> bool is<long double>();
-
-  template <> bool is<std::basic_string<char>>();
-
-  template <> bool is<bool>();
-
-#ifdef QT_ENABLED_FOR_QJS
-  template <> inline QString as<QString>(bool safe) {
-    return QString::fromStdString(as<std::string>(safe));
-  };
-
-  template <> inline bool is<QString>() { return is<std::string>(safe); };
-#endif
-
   template <Number T> inline T as(bool safe = SafeCast) {
     return static_cast<T>(as<long double>(safe));
   };
@@ -195,6 +175,26 @@ private:
 template <Number T> Value Context::newValue(const T &value) {
   return newValue((long double)value);
 };
+
+  template <> long double Value::as<long double>(bool safe);
+
+  template <> std::basic_string<char> Value::as<std::basic_string<char>>(bool safe);
+
+  template <> bool Value::as<bool>(bool safe);
+
+  template <> bool Value::is<long double>();
+
+  template <> bool Value::is<std::basic_string<char>>();
+
+  template <> bool Value::is<bool>();
+
+#ifdef QT_ENABLED_FOR_QJS
+  template <> inline QString Value::as<QString>(bool safe) {
+    return QString::fromStdString(as<std::string>(safe));
+  };
+
+  template <> inline bool Value::is<QString>() { return is<std::string>(safe); };
+#endif
 
 } // namespace qjs
 
