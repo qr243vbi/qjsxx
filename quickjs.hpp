@@ -135,7 +135,7 @@ public:
 
   template <> Value newValue<bool>(const bool &);
 
-  template <Number T> inline T newValue(const T &value);
+  template <Number T> inline Value newValue(const T &value);
 
 private:
   Context(std::shared_ptr<qjs_private::ContextHolder>);
@@ -192,7 +192,7 @@ private:
   std::shared_ptr<qjs_private::ValueHolder> value_ptr;
 };
 
-template <Number T> inline T Context::newValue(const T &value) {
+template <Number T> Value Context::newValue(const T &value) {
   return newValue((long double)value);
 };
 

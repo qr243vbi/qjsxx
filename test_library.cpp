@@ -59,7 +59,7 @@ void main_execute(){
         assert(value.is<std::string>());
     } 
     cout << "Test 1 success" << endl;
-    auto value2 = context.newNumber(12);
+    auto value2 = context.newValue(12);
     assert(value2.is<int>());
     cout << "Test 2 success" << endl;
     auto value3 = context.evalCode("\"234\"");
