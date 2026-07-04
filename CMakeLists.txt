@@ -49,11 +49,6 @@ file(GLOB  QUICKJS_SOURCES  CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/quickjs_*.cpp"
 )
 
-add_library(qjsxx
-    ${QUICKJS_SOURCES}
-)
-
-add_executable(qjsxx_test test_library.cpp)
 
 find_package(qjs CONFIG QUIET)
 if(qjs_FOUND)
@@ -63,16 +58,36 @@ else()
     add_subdirectory("${PROJECT_SOURCE_DIR}/qjs")
 endif()
 
+
+add_library(qjsxx_static STATIC
+    ${QUICKJS_SOURCES}
+)
+add_library(qjsxx SHARED
+    ${QUICKJS_SOURCES}
+)
+
 message(STATUS "Using -std=c++${CMAKE_CXX_STANDARD}")
 
-target_link_libraries(qjsxx PRIVATE qjs)
-if (${EXP_SUPPORTED})
-    target_link_libraries(qjsxx PRIVATE stdc++exp)
-endif() 
-target_compile_features(qjsxx PUBLIC cxx_std_${CMAKE_CXX_STANDARD})
+foreach(target qjsxx qjsxx_static)
+    target_link_libraries(${target} PRIVATE qjs)
+    if (${EXP_SUPPORTED})
+        target_link_libraries(${target} PRIVATE stdc++exp)
+    endif() 
+    target_compile_features(${target} PUBLIC cxx_std_${CMAKE_CXX_STANDARD})
+
+    if (${CPP_23_SUPPORTED})
+        target_compile_definitions(${target} PUBLIC QJS_USE_STACKTRACE)
+    endif()
+    set_target_properties(${target} PROPERTIES
+        OUTPUT_NAME qjsxx
+        VERSION ${PROJECT_VERSION}
+        SOVERSION ${PROJECT_VERSION_MAJOR}
+    )
+endforeach()
+
 
 if (${CPP_23_SUPPORTED})
-    target_compile_definitions(qjsxx PUBLIC QJS_USE_STACKTRACE)
+    add_executable(qjsxx_test test_library.cpp)
 
     message(STATUS "Compiling tests")
     target_link_libraries(qjsxx_test PRIVATE qjsxx)
