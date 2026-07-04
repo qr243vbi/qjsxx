@@ -83,6 +83,15 @@ foreach(target qjsxx qjsxx_static)
         if (${EXP_SUPPORTED})
             target_link_libraries(${target} PRIVATE stdc++exp)
         endif() 
+
+        target_compile_options(${target} PRIVATE
+            $<$<CXX_COMPILER_ID:GNU,Clang>:-g>
+            $<$<CXX_COMPILER_ID:MSVC>:/Zi>
+        )
+
+        target_link_options(${target} PRIVATE
+            $<$<CXX_COMPILER_ID:MSVC>:/DEBUG>
+        )
     endif()
     set_target_properties(${target} PROPERTIES
         OUTPUT_NAME qjsxx
@@ -109,4 +118,13 @@ if (${CPP_23_SUPPORTED})
     if (${EXP_SUPPORTED})
         target_link_libraries(qjsxx_test PRIVATE stdc++exp)
     endif() 
+
+    target_compile_options(qjsxx_test PRIVATE
+        $<$<CXX_COMPILER_ID:GNU,Clang>:-g>
+        $<$<CXX_COMPILER_ID:MSVC>:/Zi>
+    )
+
+    target_link_options(qjsxx_test PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:/DEBUG>
+    )
 endif()
