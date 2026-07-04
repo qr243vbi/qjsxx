@@ -3,6 +3,15 @@
 #include <quickjs.h>
 #include <type_traits>
 
+#if __has_include(<QString>)
+#include <QString>
+#define QT_ENABLED_FOR_QJS 1
+#else
+#ifdef QT_ENABLED_FOR_QJS
+#undef QT_ENABLED_FOR_QJS
+#endif
+#endif
+
 namespace qjs {
 constexpr bool SafeCast = false;
 
@@ -117,6 +126,17 @@ public:
   Value evalCode(const std::string_view &str,
                  const std::string_view &context = "eval.js");
 
+  template <NotNumber T> Value newValue(const T &value);
+
+  template <> Value newValue<long double>(const long double &);
+
+  template <>
+  Value newValue<std::basic_string<char>>(const std::basic_string<char> &);
+
+  template <> Value newValue<bool>(const bool &);
+
+  template <Number T> inline T newValue(const T &value);
+
 private:
   Context(std::shared_ptr<qjs_private::ContextHolder>);
   std::shared_ptr<qjs_private::ContextHolder> context_ptr;
@@ -152,16 +172,28 @@ public:
 
   template <> bool is<bool>();
 
+#ifdef QT_ENABLED_FOR_QJS
+  template <> inline QString as<QString>(bool safe) {
+    return QString::fromStdString(as<std::string>(safe));
+  };
+
+  template <> inline bool is<QString>() { return is<std::string>(safe); };
+#endif
+
   template <Number T> inline T as(bool safe = SafeCast) {
     return static_cast<T>(as<long double>(safe));
   };
 
-  template <Number T> inline bool is() { return isNumber(); };
+  template <Number T> inline bool is() { return is<long double>(); };
 
 private:
   Value(std::shared_ptr<qjs_private::ValueHolder>);
   Value(std::shared_ptr<qjs_private::ContextHolder>, JSValue value);
   std::shared_ptr<qjs_private::ValueHolder> value_ptr;
+};
+
+template <Number T> inline T Context::newValue(const T &value) {
+  return newValue((long double)value);
 };
 
 } // namespace qjs

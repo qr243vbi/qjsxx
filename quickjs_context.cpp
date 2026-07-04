@@ -35,3 +35,16 @@ Value Context::evalCode(const std::string_view & str, const std::string_view & c
     JSValue value = JS_Eval(this->context_ptr->context, str.data(), str.length(), context.data(), JS_EVAL_TYPE_GLOBAL);
     return Value(this->context_ptr, value);
 }
+
+
+template <> Value Context::newValue<long double>(const long double & value){
+    return newNumber(value);
+};
+
+template <> Value Context::newValue<std::basic_string<char>>(const std::basic_string<char> & value){
+    return newString(value);
+};
+
+template <> Value Context::newValue<bool>(const bool & value){
+    return newBoolean(value);
+};
