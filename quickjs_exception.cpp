@@ -57,7 +57,6 @@ static std::string cast_exception_message(int message_) {
   }
 }
 
-
 static std::string not_same_context_exception(int) {
   return "Not the same context";
 }
@@ -84,7 +83,6 @@ void CastException::throw_unless(bool condition, CastException::Type type) {
     throw CastException(type);
   }
 };
-
 
 void NotSameContextException::throw_unless(bool condition) {
   if (!condition) {

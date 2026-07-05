@@ -26,6 +26,16 @@ Value Context::newNumber(long double number){
     return Value(this->context_ptr, value);
 }
 
+
+JSValue Context::function_trampoline(JSContext *ctx,
+                         JSValueConst this_val,
+                         int argc,
+                         JSValueConst *argv,
+                         int magic,
+                         JSValue *func_data){
+    
+};
+
 Value Context::newBoolean(bool flag){
     JSValue value = JS_NewBool(this->context_ptr->context, flag);
     return Value(this->context_ptr, value);

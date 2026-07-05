@@ -21,6 +21,8 @@ class Value;
 }; // namespace qjs
 
 namespace qjs_private {
+
+
 class ContextHolder;
 
 struct ArrayHolder {
@@ -40,19 +42,29 @@ private:
   JSValue value;
 };
 
-class RuntimeHolder {
+class OpaqueHolder {
+  public:
+    virtual void setOpaque(std::shared_ptr<void> pointer) = 0;
+    std::shared_ptr<void> getOpaque();
+
+  protected:
+    std::shared_ptr<void> pointer;
+};  
+
+class RuntimeHolder: public OpaqueHolder {
   friend class qjs::Runtime;
   friend class ContextHolder;
 
 public:
   RuntimeHolder();
   ~RuntimeHolder();
+  virtual void setOpaque(std::shared_ptr<void> pointer) override;
 
 private:
   JSRuntime *runtime;
 };
 
-class ContextHolder {
+class ContextHolder: public OpaqueHolder {
   friend class ValueHolder;
   friend class qjs::Value;
   friend class qjs::Context;
@@ -61,6 +73,7 @@ class ContextHolder {
 public:
   ContextHolder(std::shared_ptr<RuntimeHolder> runtime);
   ~ContextHolder();
+  virtual void setOpaque(std::shared_ptr<void> pointer) override;
 
 private:
   std::shared_ptr<RuntimeHolder> runtime_ptr;
@@ -135,6 +148,13 @@ class Context {
   friend class Array;
 
 public:
+  static JSValue function_trampoline(JSContext *ctx,
+                         JSValueConst this_val,
+                         int argc,
+                         JSValueConst *argv,
+                         int magic,
+                         JSValue *func_data);
+                         
   Context();
   Context(const Runtime &run);
   Context(const Context &context);
@@ -171,6 +191,7 @@ public:
   bool isNumber() const ;
   bool isString() const ;
   bool isBoolean() const ;
+  bool isFunction() const ;
 
   Runtime getRuntime();
   Context getContext();

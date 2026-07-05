@@ -1,24 +1,34 @@
 #include "quickjs.hpp"
+#include <quickjs.h>
 using namespace qjs_private;
 
 RuntimeHolder::RuntimeHolder(){
-    this->runtime = JS_NewRuntime();
+    JSRuntime * runtime = this->runtime = JS_NewRuntime();
 }
 
+void RuntimeHolder::setOpaque(std::shared_ptr<void> pointer){
+    this->pointer = pointer;
+    JS_SetRuntimeOpaque(this->runtime, pointer.get());
+};
+
 RuntimeHolder::~RuntimeHolder(){
-    JS_FreeRuntime(this->runtime);
-    this->runtime = nullptr;
+    setOpaque(nullptr);
+    JS_FreeRuntime( runtime);
 }
 
 ContextHolder::ContextHolder(std::shared_ptr<RuntimeHolder> holder){
     this->runtime_ptr = holder;
-    this->context = JS_NewContext(holder->runtime);
+    JSContext* context = this->context = JS_NewContext(holder->runtime);
 }
 
+void ContextHolder::setOpaque(std::shared_ptr<void> pointer){
+    this->pointer = pointer;
+    JS_SetContextOpaque(this->context, pointer.get());
+};
+
 ContextHolder::~ContextHolder(){
-    JS_FreeContext(this->context);
-    this->runtime_ptr = nullptr;
-    this->context = nullptr;
+    setOpaque(nullptr);
+    JS_FreeContext(context);
 }
 
 ValueHolder::ValueHolder(std::shared_ptr<ContextHolder> context, JSValue value){
@@ -29,3 +39,7 @@ ValueHolder::ValueHolder(std::shared_ptr<ContextHolder> context, JSValue value){
 ValueHolder::~ValueHolder(){
     JS_FreeValue(this->context_ptr->context, value);
 }
+
+std::shared_ptr<void> OpaqueHolder::getOpaque(){
+    return this->pointer;
+};

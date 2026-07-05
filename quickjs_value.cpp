@@ -10,6 +10,10 @@ bool Value::isNumber() const {
     return JS_IsNumber(this->value_ptr->value);
 }
 
+bool Value::isFunction() const {
+    return JS_IsFunction(this->value_ptr->context_ptr->context, this->value_ptr->value);
+}
+
 bool Value::isSameContext(const Context & context) const{
     return this->value_ptr->context_ptr == context.context_ptr;
 }
