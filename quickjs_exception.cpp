@@ -61,6 +61,12 @@ static std::string not_same_context_exception(int) {
   return "Not the same context";
 }
 
+
+static std::string out_of_bound_error(int) {
+  return "Index out of bound";
+}
+
+
 static void set_shared_ptr(std::shared_ptr<void> &pointer, int message,
                            int skip) {
   auto point = new ExceptionPointer(message, skip + 1);
@@ -103,5 +109,11 @@ CastException::CastException(Type message) : QJSException((int)message) {}
 NotSameContextException::NotSameContextException() : QJSException(0) {}
 
 qjs::exceptions::ExceptionMessage NotSameContextException::getExceptionFunction() const {
+  return &not_same_context_exception;
+}
+
+IndexOutOfBoundException::IndexOutOfBoundException() : QJSException(0) {}
+
+qjs::exceptions::ExceptionMessage IndexOutOfBoundException::getExceptionFunction() const {
   return &not_same_context_exception;
 }

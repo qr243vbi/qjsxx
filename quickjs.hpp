@@ -22,18 +22,20 @@ class Value;
 
 namespace qjs_private {
 
-
+class PointerArrayHolder;
 class ContextHolder;
 
 struct ArrayHolder {
-  virtual qjs::Value get(size_t) = 0;
+  virtual qjs::Value get(size_t) const = 0;
   virtual void set(size_t, qjs::Value) = 0;
-  virtual size_t size() = 0;
+  virtual size_t size() const = 0;
 };
+
 
 class ValueHolder {
 public:
   friend class qjs::Value;
+  friend class PointerArrayHolder;
   ValueHolder(std::shared_ptr<ContextHolder> context, JSValue value);
   ~ValueHolder();
 
@@ -115,6 +117,14 @@ public:
 
   static void throw_unless(bool condition);
 };
+
+class IndexOutOfBoundException : public QJSException {
+public:
+  virtual ExceptionMessage getExceptionFunction() const override;
+
+  explicit IndexOutOfBoundException();
+};
+
 } // namespace exceptions
 
 template <typename T> using U = std::remove_cvref_t<T>;
@@ -142,6 +152,8 @@ private:
   std::shared_ptr<qjs_private::RuntimeHolder> runtime_ptr;
 };
 
+class ContextOpaque;
+
 class Context {
   friend class Runtime;
   friend class Value;
@@ -165,6 +177,7 @@ public:
                  const std::string_view &context = "eval.js");
 
   Runtime getRuntime() const;
+  std::shared_ptr<ContextOpaque> getOpaque();
 
   template <NotNumber T> Value newValue(const T &value);
 
@@ -185,7 +198,7 @@ private:
 class Value {
   friend class Runtime;
   friend class Context;
-
+  friend class qjs_private::PointerArrayHolder;
 public:
   Value(const Value &value);
   bool isNumber() const ;
@@ -249,11 +262,43 @@ public:
   size_t size();
   Context getContext();
   Runtime getRuntime();
+  static Array newArray(Context context, int argc, JSValueConst *argv);
 private:
   std::shared_ptr<qjs_private::ContextHolder> context_ptr;
   std::shared_ptr<qjs_private::ArrayHolder> array_ptr; 
 };
 
+class Function {
+  virtual qjs::Value call(const qjs::Value& this_val, const qjs::Array & arguments) = 0;
+};
+
+class ContextOpaque {
+  friend class Context;
+public:
+  ContextOpaque(const Context &);
+private:
+  Context context;
+  JSClassID function_class_id;
+};
+
 } // namespace qjs
 
 void init();
+
+
+namespace qjs_private {
+
+class PointerArrayHolder: public qjs_private::ArrayHolder {
+  friend class qjs::Context;
+  friend class qjs::Array;
+public:
+  virtual qjs::Value get(size_t) const override;
+  virtual void set(size_t, qjs::Value) override;
+  virtual size_t size() const override;
+private: 
+  std::shared_ptr<qjs_private::ContextHolder> context_ptr;
+  int argc;
+  JSValueConst *argv;
+};
+
+}

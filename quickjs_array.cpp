@@ -24,3 +24,14 @@ void Array::set(size_t index, const Value & value){
 size_t Array::size(){
     return this->array_ptr->size();
 }
+
+Array Array::newArray(Context context, int argc, JSValueConst *argv){
+    Array array;
+    array.context_ptr = context.context_ptr;
+    auto holder = std::make_shared<qjs_private::PointerArrayHolder>();
+    holder->context_ptr = context.context_ptr;
+    holder->argc = argc;
+    holder->argv = argv;
+    array.array_ptr = holder;
+    return array;
+};

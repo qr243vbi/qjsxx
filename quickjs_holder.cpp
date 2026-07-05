@@ -43,3 +43,21 @@ ValueHolder::~ValueHolder(){
 std::shared_ptr<void> OpaqueHolder::getOpaque(){
     return this->pointer;
 };
+
+qjs::Value PointerArrayHolder::get(size_t index) const {
+    if (index >= this->argc){
+        throw qjs::exceptions::IndexOutOfBoundException();    
+    }
+    return qjs::Value(this->context_ptr, this->argv[index]);
+};
+
+void PointerArrayHolder::set(size_t index, qjs::Value value){
+    if (index >= this->argc){
+        throw qjs::exceptions::IndexOutOfBoundException();    
+    }
+    this->argv[index] = value.value_ptr->value;
+};
+
+size_t PointerArrayHolder::size() const {
+    return this->argc;
+};

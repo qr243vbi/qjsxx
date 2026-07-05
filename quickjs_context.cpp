@@ -26,6 +26,18 @@ Value Context::newNumber(long double number){
     return Value(this->context_ptr, value);
 }
 
+ContextOpaque::ContextOpaque(const Context & context){
+    this->context = context;
+};
+
+std::shared_ptr<ContextOpaque> Context::getOpaque(){
+    auto pointer = std::dynamic_pointer_cast<ContextOpaque>(this->context_ptr->getOpaque());
+    if (pointer == nullptr){
+        pointer = std::make_shared<ContextOpaque>(*this);
+        this->context_ptr->setOpaque(pointer);
+    }
+    return pointer;
+}
 
 JSValue Context::function_trampoline(JSContext *ctx,
                          JSValueConst this_val,
