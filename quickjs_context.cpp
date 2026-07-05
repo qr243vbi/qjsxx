@@ -12,6 +12,11 @@ Context::Context(const Runtime & run){
     this->context_ptr = std::make_shared<ContextHolder>(run.runtime_ptr);
 }
 
+Context::Context(){
+    Runtime run;
+    this->context_ptr = std::make_shared<ContextHolder>(run.runtime_ptr);
+}
+
 Context::Context(const Context &context){
     this->context_ptr = context.context_ptr;
 }
@@ -36,6 +41,10 @@ Value Context::evalCode(const std::string_view & str, const std::string_view & c
     return Value(this->context_ptr, value);
 }
 
+Runtime Context::getRuntime() const {
+    Runtime ctx(this->context_ptr->runtime_ptr);
+    return ctx;
+}
 
 template <> Value Context::newValue<long double>(const long double & value){
     return newNumber(value);

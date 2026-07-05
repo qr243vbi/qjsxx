@@ -1,18 +1,19 @@
 #include <iostream>
 #include "quickjs.hpp"
 #include <exception>
-using namespace qjs;
-using namespace std;
 
 #include <exception>
 #include <string>
 #include <utility>
-#include <sstream>
 #include <iostream>
 
 #ifdef QJS_USE_STACKTRACE
 #include <stacktrace>
+#include <sstream>
 #endif
+
+using namespace qjs;
+using namespace std;
 
 class TracedException : public std::exception {
 public:

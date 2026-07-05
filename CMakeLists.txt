@@ -5,6 +5,10 @@ project(qjsxx VERSION 1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
+
 include(CheckCXXSourceCompiles)
 
 # =====================================================================
@@ -41,7 +45,13 @@ endfunction()
 check_standard("23" CPP_23_SUPPORTED)
 check_exp(EXP_SUPPORTED)
 
-option(QJS_USE_STACKTRACE "Use stacktrace if available" OFF)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(QJS_USE_STACKTRACE_DEFAULT OFF)
+else()
+    set(QJS_USE_STACKTRACE_DEFAULT ON)
+endif()
+
+option(QJS_USE_STACKTRACE "Use stacktrace if available" ${QJS_USE_STACKTRACE_DEFAULT})
 if (NOT QJS_USE_STACKTRACE)
     set(CPP_23_SUPPORTED OFF)
 endif()

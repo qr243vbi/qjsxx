@@ -43,7 +43,7 @@ struct ExceptionPointer {
   }
 };
 
-static inline std::string cast_exception_message(int message_) {
+static std::string cast_exception_message(int message_) {
   typedef CastException::Type type;
   switch (message_) {
   case type::Number:
@@ -55,6 +55,11 @@ static inline std::string cast_exception_message(int message_) {
   default:
     return "Wrong type";
   }
+}
+
+
+static std::string not_same_context_exception(int) {
+  return "Not the same context";
 }
 
 static void set_shared_ptr(std::shared_ptr<void> &pointer, int message,
@@ -80,6 +85,13 @@ void CastException::throw_unless(bool condition, CastException::Type type) {
   }
 };
 
+
+void NotSameContextException::throw_unless(bool condition) {
+  if (!condition) {
+    throw NotSameContextException();
+  }
+};
+
 QJSException::QJSException(int message) {
   set_shared_ptr(this->pointer, message, 1);
 }
@@ -89,3 +101,9 @@ qjs::exceptions::ExceptionMessage CastException::getExceptionFunction() const {
 }
 
 CastException::CastException(Type message) : QJSException((int)message) {}
+
+NotSameContextException::NotSameContextException() : QJSException(0) {}
+
+qjs::exceptions::ExceptionMessage NotSameContextException::getExceptionFunction() const {
+  return &not_same_context_exception;
+}

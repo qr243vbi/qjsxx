@@ -12,6 +12,9 @@ Runtime::Runtime(const Runtime & runtime){
     this->runtime_ptr = runtime.runtime_ptr;
 }
 
+Runtime::Runtime(std::shared_ptr<qjs_private::RuntimeHolder> runtime){
+    this->runtime_ptr = runtime;
+}
 
 Context Runtime::newContext() const {
     std::shared_ptr<ContextHolder> holder = std::make_shared<ContextHolder>(this->runtime_ptr);

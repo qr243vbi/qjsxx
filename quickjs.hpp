@@ -23,6 +23,12 @@ class Value;
 namespace qjs_private {
 class ContextHolder;
 
+struct ArrayHolder {
+  virtual qjs::Value get(size_t) = 0;
+  virtual void set(size_t, qjs::Value) = 0;
+  virtual size_t size() = 0;
+};
+
 class ValueHolder {
 public:
   friend class qjs::Value;
@@ -87,6 +93,15 @@ public:
 
   static void throw_unless(bool condition, Type type);
 };
+
+class NotSameContextException : public QJSException {
+public:
+  virtual ExceptionMessage getExceptionFunction() const override;
+
+  explicit NotSameContextException();
+
+  static void throw_unless(bool condition);
+};
 } // namespace exceptions
 
 template <typename T> using U = std::remove_cvref_t<T>;
@@ -110,14 +125,17 @@ public:
   Context newContext() const;
 
 private:
+  Runtime( std::shared_ptr<qjs_private::RuntimeHolder> );
   std::shared_ptr<qjs_private::RuntimeHolder> runtime_ptr;
 };
 
 class Context {
   friend class Runtime;
   friend class Value;
+  friend class Array;
 
 public:
+  Context();
   Context(const Runtime &run);
   Context(const Context &context);
   Value newNumber(long double number);
@@ -125,6 +143,8 @@ public:
   Value newBoolean(bool value);
   Value evalCode(const std::string_view &str,
                  const std::string_view &context = "eval.js");
+
+  Runtime getRuntime() const;
 
   template <NotNumber T> Value newValue(const T &value);
 
@@ -148,23 +168,28 @@ class Value {
 
 public:
   Value(const Value &value);
-  bool isNumber();
-  bool isString();
-  bool isBoolean();
+  bool isNumber() const ;
+  bool isString() const ;
+  bool isBoolean() const ;
 
-  double asNumber(bool safe = SafeCast);
-  std::string asString(bool safe = SafeCast);
-  bool asBoolean(bool safe = SafeCast);
+  Runtime getRuntime();
+  Context getContext();
 
-  template <NotNumber T> T as(bool safe = SafeCast);
+  bool isSameContext(const Context & ctx) const;
 
-  template <NotNumber T> bool is();
+  double asNumber(bool safe = SafeCast) const;
+  std::string asString(bool safe = SafeCast) const;
+  bool asBoolean(bool safe = SafeCast) const;
 
-  template <Number T> inline T as(bool safe = SafeCast) {
+  template <NotNumber T> T as(bool safe = SafeCast) const;
+
+  template <NotNumber T> bool is() const;
+
+  template <Number T> inline T as(bool safe = SafeCast) const{
     return static_cast<T>(as<long double>(safe));
   };
 
-  template <Number T> inline bool is() { return is<long double>(); };
+  template <Number T> inline bool is() const { return is<long double>(); };
 
 private:
   Value(std::shared_ptr<qjs_private::ValueHolder>);
@@ -176,17 +201,17 @@ template <Number T> Value Context::newValue(const T &value) {
   return newValue((long double)value);
 };
 
-  template <> long double Value::as<long double>(bool safe);
+  template <> long double Value::as<long double>(bool safe) const;
 
-  template <> std::basic_string<char> Value::as<std::basic_string<char>>(bool safe);
+  template <> std::basic_string<char> Value::as<std::basic_string<char>>(bool safe) const;
 
-  template <> bool Value::as<bool>(bool safe);
+  template <> bool Value::as<bool>(bool safe) const;
 
-  template <> bool Value::is<long double>();
+  template <> bool Value::is<long double>() const;
 
-  template <> bool Value::is<std::basic_string<char>>();
+  template <> bool Value::is<std::basic_string<char>>() const;
 
-  template <> bool Value::is<bool>();
+  template <> bool Value::is<bool>() const;
 
 #ifdef QT_ENABLED_FOR_QJS
   template <> inline QString Value::as<QString>(bool safe) {
@@ -195,6 +220,18 @@ template <Number T> Value Context::newValue(const T &value) {
 
   template <> inline bool Value::is<QString>() { return is<std::string>(safe); };
 #endif
+
+class Array {
+public:
+  Value get(size_t index);
+  void set(size_t index, const Value &value);
+  size_t size();
+  Context getContext();
+  Runtime getRuntime();
+private:
+  std::shared_ptr<qjs_private::ContextHolder> context_ptr;
+  std::shared_ptr<qjs_private::ArrayHolder> array_ptr; 
+};
 
 } // namespace qjs
 
