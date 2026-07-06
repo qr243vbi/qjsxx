@@ -35,6 +35,7 @@ struct ArrayHolder {
 class ValueHolder {
 public:
   friend class qjs::Value;
+  friend class qjs::Context;
   friend class PointerArrayHolder;
   ValueHolder(std::shared_ptr<ContextHolder> context, JSValue value);
   ~ValueHolder();
@@ -109,13 +110,14 @@ public:
   static void throw_unless(bool condition, Type type);
 };
 
-class NotSameContextException : public QJSException {
+class ContextException : public QJSException {
 public:
+  enum Type { NotSame = 1, Destroyed = 2 };
   virtual ExceptionMessage getExceptionFunction() const override;
 
-  explicit NotSameContextException();
+  explicit ContextException(Type message);
 
-  static void throw_unless(bool condition);
+  static void throw_unless(bool condition, Type type);
 };
 
 class IndexOutOfBoundException : public QJSException {
@@ -138,26 +140,36 @@ concept Number = (std::integral<std::remove_cvref_t<T>> ||
 template <typename T>
 concept NotNumber = !Number<T>;
 
+
+class ContextOpaque;
+class RuntimeOpaque;
+
 class Runtime {
   friend class Context;
   friend class Value;
+  friend class ContextOpaque;
+  friend class RuntimeOpaque;
 
 public:
   Runtime();
   Runtime(const Runtime &run);
   Context newContext() const;
 
+  static void finalizeFunction(JSRuntime *rt, JSValue val);
+
+  static JSClassDef& getFunctionClassDef();
+
 private:
   Runtime( std::shared_ptr<qjs_private::RuntimeHolder> );
   std::shared_ptr<qjs_private::RuntimeHolder> runtime_ptr;
+  std::shared_ptr<RuntimeOpaque> getOpaque();
 };
-
-class ContextOpaque;
 
 class Context {
   friend class Runtime;
   friend class Value;
   friend class Array;
+  friend class ContextOpaque;
 
 public:
   static JSValue function_trampoline(JSContext *ctx,
@@ -176,14 +188,16 @@ public:
   Value evalCode(const std::string_view &str,
                  const std::string_view &context = "eval.js");
 
-  Runtime getRuntime() const;
-  std::shared_ptr<ContextOpaque> getOpaque();
+  Runtime getRuntime() ;
 
   template <NotNumber T> Value newValue(const T &value);
 
   template <Number T> inline Value newValue(const T &value);
 
 private:
+  Value newRawValue(JSValue val);
+  std::shared_ptr<ContextOpaque> getOpaque();
+  std::shared_ptr<RuntimeOpaque> getRuntimeOpaque();
   Context(std::shared_ptr<qjs_private::ContextHolder>);
   std::shared_ptr<qjs_private::ContextHolder> context_ptr;
 };
@@ -196,8 +210,8 @@ private:
   template <> Value Context::newValue<bool>(const bool &);
 
 class Value {
-  friend class Runtime;
-  friend class Context;
+  friend class qjs::Runtime;
+  friend class qjs::Context;
   friend class qjs_private::PointerArrayHolder;
 public:
   Value(const Value &value);
@@ -206,8 +220,8 @@ public:
   bool isBoolean() const ;
   bool isFunction() const ;
 
-  Runtime getRuntime();
-  Context getContext();
+  Runtime getRuntime() ;
+  Context getContext() ;
 
   bool isSameContext(const Context & ctx) const;
 
@@ -257,34 +271,45 @@ template <Number T> Value Context::newValue(const T &value) {
 
 class Array {
 public:
-  Value get(size_t index);
+  Value get(size_t index) const ;
   void set(size_t index, const Value &value);
-  size_t size();
-  Context getContext();
-  Runtime getRuntime();
+  size_t size() const;
+  Context getContext() ;
+  Runtime getRuntime() ;
   static Array newArray(Context context, int argc, JSValueConst *argv);
 private:
   std::shared_ptr<qjs_private::ContextHolder> context_ptr;
   std::shared_ptr<qjs_private::ArrayHolder> array_ptr; 
 };
 
-class Function {
+struct Function {
   virtual qjs::Value call(const qjs::Value& this_val, const qjs::Array & arguments) = 0;
+  virtual ~Function() = 0;
+};
+
+class RuntimeOpaque {
+  friend class Runtime;
+  friend class Context;
+public:
+  RuntimeOpaque();
+private:
+  Runtime getRuntime();
+  std::weak_ptr<qjs_private::RuntimeHolder> runtime_ptr;
+  JSClassID function_class_id;
 };
 
 class ContextOpaque {
   friend class Context;
 public:
-  ContextOpaque(const Context &);
+  ContextOpaque();
 private:
-  Context context;
-  JSClassID function_class_id;
+  Context getContext();
+  std::weak_ptr<qjs_private::ContextHolder> context_ptr;
 };
 
 } // namespace qjs
 
 void init();
-
 
 namespace qjs_private {
 

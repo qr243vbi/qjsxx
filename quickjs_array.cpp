@@ -1,27 +1,27 @@
 #include "quickjs.hpp"
 using namespace qjs;
 
-Runtime Array::getRuntime(){
+ Runtime Array::getRuntime() {
     return getContext().getRuntime();
 }
 
-Context Array::getContext(){
+ Context Array::getContext() {
     Context ctx(this->context_ptr);
     return ctx;
 }
 
-Value Array::get(size_t index){
+Value Array::get(size_t index) const{
     auto ret = this->array_ptr->get(index);
-    qjs::exceptions::NotSameContextException::throw_unless(ret.isSameContext(getContext()));
+    exceptions::ContextException::throw_unless(ret.isSameContext(((Array*)this)->getContext()), exceptions::ContextException::Type::NotSame);
     return ret;
 }
 
 void Array::set(size_t index, const Value & value){
-    qjs::exceptions::NotSameContextException::throw_unless(value.isSameContext(getContext()));
+    exceptions::ContextException::throw_unless(value.isSameContext(((Array*)this)->getContext()), exceptions::ContextException::Type::NotSame);
     this->array_ptr->set(index, value);
 }
 
-size_t Array::size(){
+size_t Array::size() const{
     return this->array_ptr->size();
 }
 

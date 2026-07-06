@@ -80,12 +80,11 @@ Value::Value(std::shared_ptr<ContextHolder> context, JSValue value){
     this->value_ptr = std::make_shared<ValueHolder>(context, value);
 }
 
-
-Runtime Value::getRuntime(){
+Runtime Value::getRuntime() {
     return getContext().getRuntime();
 };
 
-Context Value::getContext(){
+Context Value::getContext() {
     Context ctx(this->value_ptr->context_ptr);
     return ctx;
 };

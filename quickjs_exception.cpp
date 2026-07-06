@@ -57,8 +57,14 @@ static std::string cast_exception_message(int message_) {
   }
 }
 
-static std::string not_same_context_exception(int) {
-  return "Not the same context";
+static std::string not_same_context_exception(int message_) {
+  typedef ContextException::Type type;
+  switch (message_){
+  case type::NotSame:
+    return "Not the same context";
+  default:
+    return "Context destroyed";
+  }
 }
 
 
@@ -90,9 +96,9 @@ void CastException::throw_unless(bool condition, CastException::Type type) {
   }
 };
 
-void NotSameContextException::throw_unless(bool condition) {
+void ContextException::throw_unless(bool condition, ContextException::Type type) {
   if (!condition) {
-    throw NotSameContextException();
+    throw ContextException(type);
   }
 };
 
@@ -104,11 +110,11 @@ qjs::exceptions::ExceptionMessage CastException::getExceptionFunction() const {
   return &cast_exception_message;
 }
 
-CastException::CastException(Type message) : QJSException((int)message) {}
+CastException::CastException(CastException::Type message) : QJSException((int)message) {}
 
-NotSameContextException::NotSameContextException() : QJSException(0) {}
+ContextException::ContextException(ContextException::Type message) : QJSException((int)message) {}
 
-qjs::exceptions::ExceptionMessage NotSameContextException::getExceptionFunction() const {
+qjs::exceptions::ExceptionMessage ContextException::getExceptionFunction() const {
   return &not_same_context_exception;
 }
 

@@ -3,7 +3,6 @@
 using namespace qjs;
 using namespace qjs_private;
 
-
 Context::Context(std::shared_ptr<ContextHolder> holder){
     this->context_ptr = holder;
 }
@@ -26,18 +25,27 @@ Value Context::newNumber(long double number){
     return Value(this->context_ptr, value);
 }
 
-ContextOpaque::ContextOpaque(const Context & context){
-    this->context = context;
+ContextOpaque::ContextOpaque(){
 };
 
+Context ContextOpaque::getContext(){
+    return Context(this->context_ptr.lock());
+}
+
 std::shared_ptr<ContextOpaque> Context::getOpaque(){
-    auto pointer = std::dynamic_pointer_cast<ContextOpaque>(this->context_ptr->getOpaque());
+    auto pointer = std::static_pointer_cast<ContextOpaque>(this->context_ptr->getOpaque());
     if (pointer == nullptr){
-        pointer = std::make_shared<ContextOpaque>(*this);
+        pointer = std::make_shared<ContextOpaque>();
+        pointer->context_ptr = this->context_ptr;
         this->context_ptr->setOpaque(pointer);
     }
     return pointer;
 }
+
+Value Context::newRawValue(JSValue val){
+    auto dup = JS_DupValue(this->context_ptr->context, val);
+    return Value(this->context_ptr, dup);
+};
 
 JSValue Context::function_trampoline(JSContext *ctx,
                          JSValueConst this_val,
@@ -45,7 +53,13 @@ JSValue Context::function_trampoline(JSContext *ctx,
                          JSValueConst *argv,
                          int magic,
                          JSValue *func_data){
-    
+    auto opaque = static_cast<ContextOpaque*>(JS_GetContextOpaque(ctx));
+    if (opaque == nullptr){
+        return JS_UNDEFINED;
+    } 
+    Context context = opaque->getContext();
+    auto func = static_cast<Function*>(JS_GetOpaque(*func_data, context.getRuntimeOpaque()->function_class_id));
+    return func->call(context.newRawValue(this_val), Array::newArray(context, argc, argv)).value_ptr->value;
 };
 
 Value Context::newBoolean(bool flag){
@@ -63,7 +77,11 @@ Value Context::evalCode(const std::string_view & str, const std::string_view & c
     return Value(this->context_ptr, value);
 }
 
-Runtime Context::getRuntime() const {
+std::shared_ptr<RuntimeOpaque> Context::getRuntimeOpaque(){
+    return this->getRuntime().getOpaque();
+}
+
+Runtime Context::getRuntime() {
     Runtime ctx(this->context_ptr->runtime_ptr);
     return ctx;
 }
